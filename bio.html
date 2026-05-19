@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vòng Quay May Mắn</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1c29, #282b42);
+            color: #fff;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            margin-bottom: 30px;
+        }
+
+        /* Kim chỉ phần thưởng */
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid #ff4757;
+            z-index: 10;
+            filter: drop-shadow(0 4px 5px rgba(0,0,0,0.5));
+        }
+
+        /* ĐÃ CHỈNH Ô TRÒN BÉ LẠI THEO ĐÚNG TỶ LỆ TRƯỚC (90px) */
+        .center-logo {
+            position: absolute;
+            width: 90px;  /* Trở về kích thước cũ của bạn */
+            height: 90px; /* Trở về kích thước cũ của bạn */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: #fff;
+            border: 4px solid #f1c40f;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            z-index: 5;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Giữ ảnh hiển thị chuẩn bên trong ô tròn nhỏ, không bị móp hay tràn khung */
+       .center-logo img {
+            width: 300%;
+            height: 308%;
+            object-fit: contain;
+            border-radius: 82%;
+        }
+
+        /* Vòng quay */
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            border: 8px solid #f1c40f;
+            box-shadow: 0 0 20px rgba(241, 196, 15, 0.5), inset 0 0 20px rgba(0,0,0,0.5);
+            transition: transform 4s cubic-bezier(0.1, 0.8, 0.1, 1);
+        }
+
+        /* Nút quay */
+        .spin-btn {
+            padding: 12px 35px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1c29;
+            background: #f1c40f;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .spin-btn:hover {
+            background: #f39c12;
+            transform: translateY(-2px);
+        }
+
+        .spin-btn:disabled {
+            background: #95a5a6;
+            color: #7f8c8d;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Popup thông báo kết quả */
+        .result-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            color: #333;
+            padding: 25px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            z-index: 100;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .result-modal h2 {
+            color: #2ed573;
+            margin-bottom: 10px;
+        }
+
+        .result-modal button {
+            margin-top: 15px;
+            padding: 8px 20px;
+            border: none;
+            background: #ff4757;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 99;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -60%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Vòng Quay May Mắn</h1>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        
+        <div class="center-logo">
+            <img src="Artboard 1.png" alt="Logo">
+        </div>
+
+        <canvas id="wheelCanvas" class="wheel" width="400" height="400"></canvas>
+    </div>
+
+    <button class="spin-btn" id="spinBtn">QUAY NGAY</button>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="result-modal" id="resultModal">
+        <h2>Chúc Mừng!</h2>
+        <p id="resultText">Bạn đã trúng...</p>
+        <button onclick="closeModal()">Đóng</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        const resultModal = document.getElementById('resultModal');
+        const resultText = document.getElementById('resultText');
+        const overlay = document.getElementById('overlay');
+
+        // Định nghĩa 10 ô thưởng xen kẽ, giữ nguyên tỷ lệ cũ của bạn
+        const prizes = [
+            { text: "Giải 10k", weight: 16.25, color: "#16a085" },
+            { text: "Giải 20k", weight: 16.25, color: "#2980b9" },
+            { text: "Nước / Bim Bim", weight: 10.0, color: "#8e44ad" },
+            { text: "Jackpot", weight: 5.0, color: "#e74c3c" },
+            { text: "Chúc bạn may mắn", weight: 2.5, color: "#2c3e50" },
+            
+            { text: "Giải 10k", weight: 16.25, color: "#1abc9c" },
+            { text: "Giải 20k", weight: 16.25, color: "#3498db" },
+            { text: "Nước / Bim Bim", weight: 10.0, color: "#9b59b6" },
+            { text: "Jackpot", weight: 5.0, color: "#c0392b" },
+            { text: "Chúc bạn may mắn", weight: 2.5, color: "#34495e" }
+        ];
+
+        const numSegments = prizes.length;
+        const segmentAngle = 360 / numSegments; 
+        let currentRotation = 0;
+        let isSpinning = false;
+
+        // Vẽ vòng quay lên Canvas
+        function drawWheel() {
+            const size = canvas.width;
+            const center = size / 2;
+
+            for (let i = 0; i < numSegments; i++) {
+                const startAngle = (i * segmentAngle * Math.PI) / 180;
+                const endAngle = ((i + 1) * segmentAngle * Math.PI) / 180;
+
+                ctx.beginPath();
+                ctx.moveTo(center, center);
+                ctx.arc(center, center, center, startAngle, endAngle);
+                ctx.fillStyle = prizes[i].color;
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(center, center);
+                ctx.rotate(startAngle + (segmentAngle * Math.PI) / 360);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 13px Arial"; 
+                ctx.fillText(prizes[i].text, center - 25, 5);
+                ctx.restore();
+            }
+        }
+
+        // Chọn phần thưởng dựa trên tỷ lệ phần trăm
+        function getWeightedPrizeIndex() {
+            const random = Math.random() * 100;
+            let cumulativeWeight = 0;
+
+            for (let i = 0; i < prizes.length; i++) {
+                cumulativeWeight += prizes[i].weight;
+                if (random <= cumulativeWeight) {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+        // Xử lý sự kiện quay
+        spinBtn.addEventListener('click', () => {
+            if (isSpinning) return;
+            isSpinning = true;
+            spinBtn.disabled = true;
+
+            const prizeIndex = getWeightedPrizeIndex();
+            const prizeCenterAngle = (prizeIndex * segmentAngle) + (segmentAngle / 2);
+            const extraTargetAngle = 270 - prizeCenterAngle;
+            const totalRotationNeeded = (360 * 5) + extraTargetAngle;
+
+            currentRotation += totalRotationNeeded - (currentRotation % 360);
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                spinBtn.disabled = false;
+                
+                resultText.innerHTML = `Bạn đã trúng phần quà: <strong>${prizes[prizeIndex].text}</strong>`;
+                resultModal.style.display = 'block';
+                overlay.style.display = 'block';
+            }, 4000);
+        });
+
+        function closeModal() {
+            resultModal.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+
+        drawWheel();
+    </script>
+</body>
+</html>
