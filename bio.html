@@ -51,11 +51,10 @@
             filter: drop-shadow(0 4px 5px rgba(0,0,0,0.5));
         }
 
-        /* ĐÃ CHỈNH Ô TRÒN BÉ LẠI THEO ĐÚNG TỶ LỆ TRƯỚC (90px) */
         .center-logo {
             position: absolute;
-            width: 90px;  /* Trở về kích thước cũ của bạn */
-            height: 90px; /* Trở về kích thước cũ của bạn */
+            width: 90px;  
+            height: 90px; 
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -70,8 +69,7 @@
             justify-content: center;
         }
 
-        /* Giữ ảnh hiển thị chuẩn bên trong ô tròn nhỏ, không bị móp hay tràn khung */
-       .center-logo img {
+        .center-logo img {
             width: 300%;
             height: 308%;
             object-fit: contain;
@@ -194,19 +192,17 @@
         const resultText = document.getElementById('resultText');
         const overlay = document.getElementById('overlay');
 
-        // Định nghĩa 10 ô thưởng xen kẽ, giữ nguyên tỷ lệ cũ của bạn
+        // ĐÃ ĐỔI THỨ TỰ: "Giải 30k" nằm ở vị trí số 0 và "Chúc bạn may mắn" nằm ở vị trí số 4 để ĐỐI DIỆN NHAU chuẩn xác
         const prizes = [
-            { text: "Giải 10k", weight: 16.25, color: "#16a085" },
-            { text: "Giải 20k", weight: 16.25, color: "#2980b9" },
+            { text: "Giải 30k", weight: 10.0, color: "#e74c3c" },          // Ô số 1 (Nằm trên)
+            { text: "Giải 10k", weight: 15.0, color: "#16a085" },
+            { text: "Giải 20k", weight: 12.5, color: "#2980b9" },
             { text: "Nước / Bim Bim", weight: 10.0, color: "#8e44ad" },
-            { text: "Jackpot", weight: 5.0, color: "#e74c3c" },
-            { text: "Chúc bạn may mắn", weight: 2.5, color: "#2c3e50" },
             
-            { text: "Giải 10k", weight: 16.25, color: "#1abc9c" },
-            { text: "Giải 20k", weight: 16.25, color: "#3498db" },
-            { text: "Nước / Bim Bim", weight: 10.0, color: "#9b59b6" },
-            { text: "Jackpot", weight: 5.0, color: "#c0392b" },
-            { text: "Chúc bạn may mắn", weight: 2.5, color: "#34495e" }
+            { text: "Chúc bạn may mắn", weight: 15.0, color: "#2c3e50" },   // Ô số 5 (Đối diện thẳng hàng với 30k)
+            { text: "Giải 10k", weight: 15.0, color: "#1abc9c" },
+            { text: "Giải 20k", weight: 12.5, color: "#3498db" },
+            { text: "Nước / Bim Bim", weight: 10.0, color: "#9b59b6" }
         ];
 
         const numSegments = prizes.length;
@@ -218,6 +214,8 @@
         function drawWheel() {
             const size = canvas.width;
             const center = size / 2;
+
+            ctx.clearRect(0, 0, size, size); 
 
             for (let i = 0; i < numSegments; i++) {
                 const startAngle = (i * segmentAngle * Math.PI) / 180;
@@ -241,7 +239,7 @@
             }
         }
 
-        // Chọn phần thưởng dựa trên tỷ lệ phần trăm
+        // Chọn phần thưởng dựa trên tỷ lệ phần trăm chuẩn
         function getWeightedPrizeIndex() {
             const random = Math.random() * 100;
             let cumulativeWeight = 0;
@@ -273,7 +271,17 @@
                 isSpinning = false;
                 spinBtn.disabled = false;
                 
-                resultText.innerHTML = `Bạn đã trúng phần quà: <strong>${prizes[prizeIndex].text}</strong>`;
+                const modalTitle = resultModal.querySelector('h2');
+                if (prizes[prizeIndex].text === "Chúc bạn may mắn") {
+                    modalTitle.innerText = "Tiếc quá!";
+                    modalTitle.style.color = "#e74c3c";
+                    resultText.innerHTML = `<strong>Chúc bạn may mắn lần sau nhé!</strong>`;
+                } else {
+                    modalTitle.innerText = "Chúc Mừng!";
+                    modalTitle.style.color = "#2ed573";
+                    resultText.innerHTML = `Bạn đã trúng phần quà: <strong>${prizes[prizeIndex].text}</strong>`;
+                }
+                
                 resultModal.style.display = 'block';
                 overlay.style.display = 'block';
             }, 4000);
